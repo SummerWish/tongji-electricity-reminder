@@ -2,6 +2,17 @@ var argv = require('optimist')
   .usage('Usage: $0 [config_path]')
   .argv;
 
+var winston = require('winston');
+winston.exitOnError = false;
+winston.remove(winston.transports.Console);
+winston.add(winston.transports.Console, {
+  colorize: process.stdout.isTTY,
+  timestamp: true
+});
+winston.add(winston.transports.File, {
+  filename: 'output.log'
+});
+
 var buildings = require('./values.js');
 var config_path = argv._.length > 0 ? argv._[0] : './config.json';
 var config = require(config_path);
@@ -43,7 +54,8 @@ config.watch.forEach(function(c) {
   c.building = level_2_key;
 });
 
-// helper function
+// helper functions
+// extract VIEWSTATE and EVENTVALIDATION from HTML
 var extract_state = function(response, body, callback) {
   try {
     var $ = cheerio.load(body);
@@ -55,6 +67,7 @@ var extract_state = function(response, body, callback) {
   }
 }
 
+// string substitute
 var format = function(str, obj) {
   return str.replace(/\{([^{}]+)\}/g, function(match, key) {
     var value = obj[key];
@@ -79,8 +92,7 @@ async.each(config.watch, function(c, callback) {
     function(callback) {
       request.get(config.url, callback);
     },
-    extract_state,
-    function(viewstate, eventvalidation, callback) {
+    extract_state, function(viewstate, eventvalidation, callback) {
       request.post(config.url, {
         form: {
           '__EVENTTARGET': 'DistrictDown',
@@ -94,8 +106,7 @@ async.each(config.watch, function(c, callback) {
         }
       }, callback);
     },
-    extract_state,
-    function(viewstate, eventvalidation, callback) {
+    extract_state, function(viewstate, eventvalidation, callback) {
       request.post(config.url, {
         form: {
           '__EVENTTARGET': '',
@@ -111,19 +122,21 @@ async.each(config.watch, function(c, callback) {
       }, callback);
     },
     function(response, body, callback) {
-      var $ = cheerio.load(body);
-      var $table = $('#GridView1');
-      if ($table.length > 0) {
-        var cols = $table.find('tr').eq(1).children('td');
-        callback(null, cols.eq(0).text(), cols.eq(1).text(), cols.eq(2).text(), cols.eq(3).text());
-      } else {
-        callback(new Error('Failed to parse body'));
+      try {
+        var $ = cheerio.load(body);
+        var $table = $('#GridView1');
+        if ($table.length > 0) {
+          var cols = $table.find('tr').eq(1).children('td');
+          callback(null, cols.eq(0).text(), cols.eq(1).text(), cols.eq(2).text(), cols.eq(3).text());
+        } else {
+          callback(new Error('解析 HTML 失败'));
+        }
+      } catch (err) {
+        callback(err);
       }
     }
   ], function(err, date, used, all, remain) {
-    if (err) {
-      return callback(err);
-    }
+    // generate substitute objects
     var obj = {
       campus: c.campus.trim(),
       building: c.building.trim(),
@@ -135,7 +148,13 @@ async.each(config.watch, function(c, callback) {
       remain: remain,
       datetime: moment().format('dddd, MMMM Do YYYY, h:mm:ss a')
     };
-    //console.log(format('{campus}{building}宿舍楼{room}寝室：剩余 {remain} kWh @ {date}', obj));
+    if (err) {
+      winston.error(format('{campus}{building}宿舍楼{room}寝室：{message}', obj));
+      winston.error(err.stack);
+      return callback();
+    }
+    winston.info(format('{campus}{building}宿舍楼{room}寝室：剩余 {remain} kWh @ {date}', obj));
+    // remaining < limit: send mail
     if (parseFloat(remain) < parseFloat(c.value)) {
       transport.sendMail({
         from: config.sender.nick + ' <' + config.sender.user + '>',
@@ -143,7 +162,7 @@ async.each(config.watch, function(c, callback) {
         subject: format(config.template.subject, obj),
         text: format(config.template.body, obj)
       }, function() {
-        // igmore mailing errors
+        // just ignore mailing errors
         callback();
       });
     } else {
