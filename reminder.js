@@ -77,11 +77,11 @@ var transport = nodemailer.createTransport('SMTP', {
 async.each(config.watch, function(c, callback) {
   async.waterfall([
     function(callback) {
-      request.get('http://nyglzx.tongji.edu.cn/web/datastat.aspx', callback);
+      request.get(config.url, callback);
     },
     extract_state,
     function(viewstate, eventvalidation, callback) {
-      request.post('http://nyglzx.tongji.edu.cn/web/datastat.aspx', {
+      request.post(config.url, {
         form: {
           '__EVENTTARGET': 'DistrictDown',
           '__EVENTARGUMENT': '',
@@ -96,7 +96,7 @@ async.each(config.watch, function(c, callback) {
     },
     extract_state,
     function(viewstate, eventvalidation, callback) {
-      request.post('http://nyglzx.tongji.edu.cn/web/datastat.aspx', {
+      request.post(config.url, {
         form: {
           '__EVENTTARGET': '',
           '__EVENTARGUMENT': '',
