@@ -1,0 +1,13 @@
+{
+    "name":"tongji-electricity-reminder",
+    "version":"0.0.1",
+    "dependencies": {
+        "cheerio": "*",
+        "request": "*",
+        "string_score": "*",
+        "nodemailer": "*",
+        "optimist": "*",
+        "moment": "*",
+        "async": "*"
+    }
+}

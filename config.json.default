@@ -1,0 +1,20 @@
+{
+  "sender": {
+    "server": "smtp.exmail.qq.com",
+    "port": 465,
+    "user": "xxx@xxx.com",
+    "pass": "xxx",
+    "nick": "no-reply"
+  },
+  "template": {
+    "subject": "寝室剩余电量低",
+    "body": "于 {datetime} 监测到「{campus}{building}宿舍楼{room}寝室」当前剩余电量已低于 {value} kWh，请及时购电以避免断电。\n\n账单时间: {date}\n已用电量: {used} kWh\n已购电量: {all} kWh\n剩余电量: {remain} kWh\n\n该邮件由程序自动发送，请不要回复.\nBy Hsiwezeerb."
+  },
+  "watch": [{
+    "campus": "嘉定",
+    "building": "本科1",
+    "room": "101",
+    "value": "10",
+    "receiver": ["hello@world.com"]
+  }]
+}
