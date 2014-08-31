@@ -161,7 +161,10 @@ async.each(config.watch, function(c, callback) {
         to: c.receiver,
         subject: format(config.template.subject, obj),
         text: format(config.template.body, obj)
-      }, function() {
+      }, function(err) {
+        if (err) {
+          winston.error(err);
+        }
         // just ignore mailing errors
         callback();
       });
