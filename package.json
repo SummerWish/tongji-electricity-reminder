@@ -5,7 +5,7 @@
         "cheerio": "*",
         "request": "*",
         "string_score": "*",
-        "nodemailer": "*",
+        "nodemailer": "0.7.0",
         "optimist": "*",
         "moment": "*",
         "async": "*",
